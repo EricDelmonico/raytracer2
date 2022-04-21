@@ -35,20 +35,16 @@ namespace raytracer2
             world.objects.Add(new Sphere(new Vec3(0, -100.5, -1), 100));
 
             // Loop through pixels and cast rays
-            for (int y = 0; y < cam.Height; y++)
+            int spacing = (int)((double)cam.Height / maxThreads);
+            for (int y = thread * spacing; y < thread * spacing + spacing; y++)
             {
                 for (int x = 0; x < cam.Width; x++)
                 {
-                    //for (int i = 0; i < samplesPerPixel; i++) 
-                    {
-                        double t = RandomOffset();
-                        double test = (t + x);
-                        double u = test / (target.Width - 1);
-                        double v = (y + RandomOffset()) / (target.Height - 1);
-                        Ray currentRay = cam.GetRay(u, v);
-                        Vec3 color = RayColor(currentRay);
-                        cam.AddPixel(x, y, color);// / samplesPerPixel);
-                    }
+                    double u = (x + RayHitHelpers.RandomDouble()) / (target.Width - 1);
+                    double v = (y + RayHitHelpers.RandomDouble()) / (target.Height - 1);
+                    Ray currentRay = cam.GetRay(u, v);
+                    Vec3 color = RayColor(currentRay);
+                    cam.AddPixel(x, y, color);
                 }
             }
         }

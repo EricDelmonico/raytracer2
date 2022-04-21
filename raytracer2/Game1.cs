@@ -35,7 +35,7 @@ namespace raytracer2
 
         private Camera cam => renderTarget as Camera;
 
-        private int threads = 12;
+        private int threads = 2;
 
         public Game1()
         {
@@ -121,7 +121,10 @@ namespace raytracer2
                 {
                     currentTask.Clear();
                     for (int i = 0; i < threads; i++)
-                        currentTask.Add(Task.Run(() => allRenderers[currentRenderer].RenderTo(renderTarget, i, threads)));
+                    {
+                        int copy = i;
+                        currentTask.Add(Task.Run(() => allRenderers[currentRenderer].RenderTo(renderTarget, copy, threads)));
+                    }
                 }
             }
 
@@ -188,7 +191,7 @@ namespace raytracer2
 
                 ImGui.Checkbox("Render Realtime?", ref renderRealtime);
 
-                ImGui.DragInt("Threads", ref threads, 1, 1, 12);
+                ImGui.DragInt("Threads", ref threads, 1, 1, 64);
 
                 imGuiRenderer.AfterLayout();
             }

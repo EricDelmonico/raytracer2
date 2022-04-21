@@ -2,14 +2,47 @@
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Text;
+using System.Security.Cryptography;
 
 namespace raytracer2
 {
     /// <summary>
-    /// Contains methods that calculate ray intersections
+    /// Contains methods that help with calculations
     /// </summary>
     public static class RayHitHelpers
     {
+        /// <summary>
+        /// Returns a random double
+        /// </summary>
+        /// <returns></returns>
+        private static double Rand()
+        {
+            byte[] bytes = new byte[8];
+            RandomNumberGenerator.Fill(bytes);
+            long num = BitConverter.ToInt64(bytes);
+            if (num == 0) num++;
+            return (double)num / long.MaxValue;
+        }
+
+        /// <summary>
+        /// Returns a random double in [min, max)
+        /// </summary>
+        /// <param name="min"></param>
+        /// <param name="max"></param>
+        /// <returns></returns>
+        public static double RandomDoubleRange(double min, double max)
+        {
+            return min + (max - min) * Rand();
+        }
+
+        /// <summary>
+        /// Returns a random double from [0, 1)
+        /// </summary>
+        /// <returns></returns>
+        public static double RandomDouble()
+        {
+            return RandomDoubleRange(0, 1.0);
+        }
     }
     
     /// <summary>
