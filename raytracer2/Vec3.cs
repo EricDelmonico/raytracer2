@@ -14,7 +14,6 @@ namespace raytracer2
         public static Vec3 Zero => new Vec3(0.0, 0.0, 0.0);
 
         public double x, y, z;
-        public int sampleCount;
 
         // This vector, normalized
         public Vec3 normalized => this / Length();
@@ -24,7 +23,6 @@ namespace raytracer2
             this.x = x;
             this.y = y;
             this.z = z;
-            sampleCount = 0;
         }
 
         public static Vec3 operator -(Vec3 a, Vec3 b)
@@ -84,5 +82,11 @@ namespace raytracer2
         public double Length() => Math.Sqrt(SqrLength());
 
         public static Color ToColor(Vec3 v) => new Color((float)(v.x), (float)(v.y), (float)(v.z));
+    }
+
+    public struct PixelData
+    {
+        public Vec3 color;
+        public int sampleCount;
     }
 }

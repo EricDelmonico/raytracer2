@@ -13,9 +13,9 @@ namespace raytracer2
         // The actual texture that will be rendered to the screen
         private Texture2D tex;
         // The data that tex will contain
-        private Vec3[] colorData;
+        private PixelData[] colorData;
 
-        private uint[] TexData => colorData.Select((c) => Vec3.ToColor(c / c.sampleCount).PackedValue).ToArray();
+        private uint[] TexData => colorData.Select((c) => Vec3.ToColor(c.color / c.sampleCount).PackedValue).ToArray();
 
         // Dimensions of the texture
         public virtual int Width { get; protected set; }
@@ -91,7 +91,7 @@ namespace raytracer2
         public void SetPixel(int x, int y, Vec3 color)
         {
             int trueIndex = Math.Clamp(((Height - 1) * Width - y * Width) + x, 0, colorData.Length - 1);
-            colorData[trueIndex] = color;
+            colorData[trueIndex].color = color;
             dirty = true;
         }
 
@@ -99,7 +99,7 @@ namespace raytracer2
         {
             int trueIndex = Math.Clamp(((Height - 1) * Width - y * Width) + x, 0, colorData.Length - 1);
             int samples = colorData[trueIndex].sampleCount + 1;
-            colorData[trueIndex] += color;
+            colorData[trueIndex].color += color;
             colorData[trueIndex].sampleCount = samples;
             dirty = true;
         }
@@ -127,6 +127,6 @@ namespace raytracer2
             spriteBatch.End();
         }
 
-        public Vec3[] FreshColorDataArray => new Vec3[Width * Height];
+        public PixelData[] FreshColorDataArray => new PixelData[Width * Height];
     }
 }
