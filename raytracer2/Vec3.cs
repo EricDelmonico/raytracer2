@@ -72,10 +72,10 @@ namespace raytracer2
         }
 
         public static double Dot(Vec3 a, Vec3 b) => a.x * b.x + a.y * b.y + a.z * b.z;
-        public static Vec3 Cross(Vec3 a, Vec3 b) => 
+        public static Vec3 Cross(Vec3 a, Vec3 b) =>
             new Vec3(
-                a.y * b.z - a.z * b.y, 
-                a.z * b.x - a.x * b.z, 
+                a.y * b.z - a.z * b.y,
+                a.z * b.x - a.x * b.z,
                 a.x * b.y - a.y * b.x);
 
         public double SqrLength() => x * x + y * y + z * z;
@@ -83,11 +83,29 @@ namespace raytracer2
 
         public static Color ToColor(Vec3 v) => new Color((float)(v.x), (float)(v.y), (float)(v.z));
 
-        public static Vec3 Random() => 
+        public static Vec3 Random() =>
             new Vec3(RayHitHelpers.RandomDouble(), RayHitHelpers.RandomDouble(), RayHitHelpers.RandomDouble());
 
-        public static Vec3 Random(double min, double max) => 
+        public static Vec3 Random(double min, double max) =>
             new Vec3(RayHitHelpers.RandomDoubleRange(min, max), RayHitHelpers.RandomDoubleRange(min, max), RayHitHelpers.RandomDoubleRange(min, max));
+
+        public static Vec3 RandomInUnitSphere()
+        {
+            while (true)
+            {
+                var p = Random(-1, 1);
+                if (p.SqrLength() >= 1) continue;
+                return p;
+            }
+        }
+
+        public Vec3 Sqrt()
+        {
+            x = Math.Sqrt(x);
+            y = Math.Sqrt(y);
+            z = Math.Sqrt(z);
+            return this;
+        }
     }
 
     public struct PixelData

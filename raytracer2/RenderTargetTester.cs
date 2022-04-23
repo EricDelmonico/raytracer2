@@ -8,13 +8,14 @@ namespace raytracer2
     public class RenderTargetTester : IRenderer
     {
         private Random rng;
+        public int SamplesPerPass { get; set; }
 
         public RenderTargetTester()
         {
             rng = new Random();
         }
 
-        public void RenderTo(IRenderTarget target, int _, int __)
+        public void RenderTo(IRenderTarget target, int _)
         {
             target.Clear();
             for (int i = 0; i < 2000; i++)

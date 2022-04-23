@@ -83,11 +83,11 @@ namespace raytracer2
     /// </summary>
     public class HittableList : Hittable
     {
-        public ConcurrentBag<Hittable> objects;
+        public List<Hittable> objects;
 
-        public HittableList() : this(new ConcurrentBag<Hittable>()) { }
+        public HittableList() : this(new List<Hittable>()) { }
 
-        public HittableList(ConcurrentBag<Hittable> objects)
+        public HittableList(List<Hittable> objects)
         {
             this.objects = objects;
         }
@@ -98,8 +98,9 @@ namespace raytracer2
             bool hitAnything = false;
             double closestSoFar = tMax;
             
-            foreach (var o in objects)
+            for (int i = 0; i < objects.Count; i++)
             {
+                var o = objects[i];
                 if (o.Hit(ray, tMin, closestSoFar, ref tempRec))
                 {
                     hitAnything = true;

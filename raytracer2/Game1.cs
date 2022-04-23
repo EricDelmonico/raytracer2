@@ -35,15 +35,21 @@ namespace raytracer2
 
         private Camera cam => renderTarget as Camera;
 
-        private int threads = 2;
+        private int threads = 24;
+        private int currentRow = 0;
+
+        private int samplesPerPass = 1;
+
+        private bool enableMovement = true;
+        private double movementSpeed = 1;
 
         public Game1()
         {
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
-            windowWidth = 1280;
-            windowHeight= 720;
+            windowWidth = 1024;
+            windowHeight= 1024;
             _graphics.PreferredBackBufferWidth = windowWidth;
             _graphics.PreferredBackBufferHeight = windowHeight;
             _graphics.ApplyChanges();
@@ -56,10 +62,10 @@ namespace raytracer2
             imGuiRenderer = new ImGuiRenderer(this);
             imGuiRenderer.RebuildFontAtlas();
 
-            renderTarget = new Camera(new Vec3(0, 0, -1), 320, 180, _graphics);
+            renderTarget = new Camera(new Vec3(0, 0, -1), 256, 256, _graphics);
 
             allRenderers = new List<IRenderer>();
-            allRenderers.Add(new RaytracingRenderer());
+            allRenderers.Add(new RaytracingRenderer(samplesPerPass));
             allRenderers.Add(new RenderTargetTester());
 
             allRendererNames = allRenderers.Select((r) => r.GetType().Name).ToArray();
@@ -83,47 +89,60 @@ namespace raytracer2
             MouseState mouse = Mouse.GetState();
             KeyboardState kbState = Keyboard.GetState();
 
-            if (mouse.RightButton == ButtonState.Pressed)
+            if (enableMovement)
             {
-                mousePos = mouse.Position;
+                if (mouse.RightButton == ButtonState.Pressed)
+                {
+                    mousePos = mouse.Position;
 
-                Vector2 diff = (prevMousePos.ToVector2() - mousePos.ToVector2());
-                diff.X /= windowWidth;
-                diff.Y /= windowHeight;
-                cam.ChangeForwardVec(diff);
-            }
-            else
-            {
-                mousePos = mouse.Position;
-                prevMousePos = mouse.Position;
-            }
+                    Vector2 diff = (prevMousePos.ToVector2() - mousePos.ToVector2());
+                    diff.X /= windowWidth;
+                    diff.Y /= windowHeight;
+                    cam.ChangeForwardVec(diff);
+                }
+                else
+                {
+                    mousePos = mouse.Position;
+                    prevMousePos = mouse.Position;
+                }
 
-            if (kbState.IsKeyDown(Keys.W))
-            {
-                cam.Move(0.01, MoveAxis.ForwardBack);
-            }
-            if (kbState.IsKeyDown(Keys.A))
-            {
-                cam.Move(-0.01, MoveAxis.LeftRight);
-            }
-            if (kbState.IsKeyDown(Keys.S))
-            {
-                cam.Move(-0.01, MoveAxis.ForwardBack);
-            }
-            if (kbState.IsKeyDown(Keys.D))
-            {
-                cam.Move(0.01, MoveAxis.LeftRight);
+                if (kbState.IsKeyDown(Keys.W))
+                {
+                    cam.Move(0.01 * movementSpeed, MoveAxis.ForwardBack);
+                }
+                if (kbState.IsKeyDown(Keys.A))
+                {
+                    cam.Move(-0.01 * movementSpeed, MoveAxis.LeftRight);
+                }
+                if (kbState.IsKeyDown(Keys.S))
+                {
+                    cam.Move(-0.01 * movementSpeed, MoveAxis.ForwardBack);
+                }
+                if (kbState.IsKeyDown(Keys.D))
+                {
+                    cam.Move(0.01 * movementSpeed, MoveAxis.LeftRight);
+                }
+                if (kbState.IsKeyDown(Keys.E))
+                {
+                    cam.Move(0.01 * movementSpeed, MoveAxis.UpDown);
+                }
+                if (kbState.IsKeyDown(Keys.Q))
+                {
+                    cam.Move(-0.01 * movementSpeed, MoveAxis.UpDown);
+                }
             }
 
             if (renderRealtime)
             {
-                if (currentTask.Count == 0 || currentTask.All((t) => t.IsCompleted))
+                currentTask = currentTask.Where((t) => !t.IsCompleted).ToList();
+                if (currentTask.Count < threads)
                 {
-                    currentTask.Clear();
-                    for (int i = 0; i < threads; i++)
+                    for (int i = 0; i < threads - currentTask.Count; i++)
                     {
-                        int copy = i;
-                        currentTask.Add(Task.Run(() => allRenderers[currentRenderer].RenderTo(renderTarget, copy, threads)));
+                        int copy = currentRow;
+                        currentTask.Add(Task.Run(() => allRenderers[currentRenderer].RenderTo(renderTarget, copy)));
+                        currentRow++;
+                        currentRow %= renderTarget.Height;
                     }
                 }
             }
@@ -174,24 +193,21 @@ namespace raytracer2
 
                 ImGui.Combo("Current Renderer", ref currentRenderer, allRendererNames, allRendererNames.Length);
 
-                if (ImGui.Button("Render"))
-                {
-                    if (!renderRealtime && (currentTask.Count == 0 || currentTask.All((t) => t.IsCompleted)))
-                    {
-                        currentTask.Clear();
-                        for (int i = 0; i < threads; i++)
-                            currentTask.Add(Task.Run(() => allRenderers[currentRenderer].RenderTo(renderTarget, i, threads)));
-                    }
-                }
-
                 if (ImGui.Button("Clear Target"))
                 {
                     renderTarget.Clear();
                 }
 
-                ImGui.Checkbox("Render Realtime?", ref renderRealtime);
+                ImGui.Checkbox("Render?", ref renderRealtime);
+
+                ImGui.Checkbox("Enable Movement?", ref enableMovement);
 
                 ImGui.DragInt("Threads", ref threads, 1, 1, 64);
+
+                ImGui.InputInt("Samples Per Pass", ref samplesPerPass);
+                allRenderers[currentRenderer].SamplesPerPass = samplesPerPass;
+
+                ImGui.InputDouble("Movement Speed", ref movementSpeed);
 
                 imGuiRenderer.AfterLayout();
             }

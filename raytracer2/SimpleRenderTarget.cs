@@ -15,7 +15,7 @@ namespace raytracer2
         // The data that tex will contain
         private PixelData[] colorData;
 
-        private uint[] TexData => colorData.Select((c) => Vec3.ToColor(c.color / c.sampleCount).PackedValue).ToArray();
+        private uint[] TexData => colorData.Select((c) => Vec3.ToColor((c.color / c.sampleCount).Sqrt()).PackedValue).ToArray();
 
         // Dimensions of the texture
         public virtual int Width { get; protected set; }
