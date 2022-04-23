@@ -82,6 +82,12 @@ namespace raytracer2
         public double Length() => Math.Sqrt(SqrLength());
 
         public static Color ToColor(Vec3 v) => new Color((float)(v.x), (float)(v.y), (float)(v.z));
+
+        public static Vec3 Random() => 
+            new Vec3(RayHitHelpers.RandomDouble(), RayHitHelpers.RandomDouble(), RayHitHelpers.RandomDouble());
+
+        public static Vec3 Random(double min, double max) => 
+            new Vec3(RayHitHelpers.RandomDoubleRange(min, max), RayHitHelpers.RandomDoubleRange(min, max), RayHitHelpers.RandomDoubleRange(min, max));
     }
 
     public struct PixelData
