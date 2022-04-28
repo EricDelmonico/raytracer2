@@ -71,6 +71,15 @@ namespace raytracer2
             return vec;
         }
 
+        // use for colors, probably don't use for regular Vectors...
+        public static Vec3 operator *(Vec3 vec, Vec3 vec2)
+        {
+            vec.x *= vec2.x;
+            vec.y *= vec2.y;
+            vec.z *= vec2.z;
+            return vec;
+        }
+
         public static double Dot(Vec3 a, Vec3 b) => a.x * b.x + a.y * b.y + a.z * b.z;
         public static Vec3 Cross(Vec3 a, Vec3 b) =>
             new Vec3(
@@ -88,6 +97,22 @@ namespace raytracer2
 
         public static Vec3 Random(double min, double max) =>
             new Vec3(RayHitHelpers.RandomDoubleRange(min, max), RayHitHelpers.RandomDoubleRange(min, max), RayHitHelpers.RandomDoubleRange(min, max));
+
+        public static Vec3 RandomInUnitDisk()
+        {
+            while (true)
+            {
+                var p = new Vec3(RayHitHelpers.RandomDoubleRange(-1, 1), RayHitHelpers.RandomDoubleRange(-1, 1), 0);
+                if (p.SqrLength() >= 1) continue;
+                return p;
+            }
+        }
+
+        public bool NearZero()
+        {
+            double s = 1e-8;
+            return x < s && y < s && z < s;
+        }
 
         public static Vec3 RandomInUnitSphere()
         {

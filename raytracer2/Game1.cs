@@ -188,6 +188,8 @@ namespace raytracer2
                     if (width != renderTarget.Width || height != renderTarget.Height)
                     {
                         renderTarget.Resize(width, height);
+                        // Restart rendering
+                        currentRow = 0;
                     }
                 }
 
@@ -196,6 +198,8 @@ namespace raytracer2
                 if (ImGui.Button("Clear Target"))
                 {
                     renderTarget.Clear();
+                    // Restart rendering
+                    currentRow = 0;
                 }
 
                 ImGui.Checkbox("Render?", ref renderRealtime);
@@ -208,6 +212,39 @@ namespace raytracer2
                 allRenderers[currentRenderer].SamplesPerPass = samplesPerPass;
 
                 ImGui.InputDouble("Movement Speed", ref movementSpeed);
+
+                var cam = renderTarget as Camera;
+                if (cam != null)
+                {
+                    double fov = cam.FOV;
+                    ImGui.InputDouble("FOV", ref fov);
+                    cam.FOV = System.Math.Clamp(fov, 10.0, 180.0);
+                }
+
+                var rt = allRenderers[currentRenderer] as RaytracingRenderer;
+                if (rt != null)
+                {
+                    var objects = rt.World.objects;
+                    int sphereNum = 0;
+                    foreach(var obj in objects)
+                    {
+                        var sphere = obj as Sphere;
+                        if (sphere == null) continue;
+                        sphereNum++;
+
+                        if (ImGui.CollapsingHeader($"Sphere {sphereNum}"))
+                        {
+                            System.Numerics.Vector3 pos = new System.Numerics.Vector3((float)sphere.Center.x, (float)sphere.Center.y, (float)sphere.Center.z);
+                            ImGui.InputFloat3($"Sphere {sphereNum} Position", ref pos);
+                            sphere.Center = new Vec3(pos.X, pos.Y, pos.Z);
+
+                            double rad = sphere.Radius;
+                            ImGui.InputDouble($"Sphere {sphereNum} Radius", ref rad);
+                            sphere.Radius = rad;
+                        }
+                        
+                    }
+                }
 
                 imGuiRenderer.AfterLayout();
             }

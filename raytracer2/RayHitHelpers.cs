@@ -43,6 +43,11 @@ namespace raytracer2
         {
             return RandomDoubleRange(0, 1.0);
         }
+
+        public static Vec3 Reflect(Vec3 v, Vec3 n)
+        {
+            return v - 2 * Vec3.Dot(v, n) * n;
+        }
     }
     
     /// <summary>
@@ -52,14 +57,16 @@ namespace raytracer2
     {
         public Vec3 p;
         public Vec3 normal;
+        public Material material;
         public double t;
         public bool frontFace;
 
-        public HitRecord(Vec3 p, Vec3 normal, double t)
+        public HitRecord(Vec3 p, Vec3 normal, double t, Material material)
         {
             this.p = p;
             this.normal = normal;
             this.t = t;
+            this.material = material;
             frontFace = false;
         }
 
@@ -122,13 +129,15 @@ namespace raytracer2
     {
         public Vec3 Center { get; set; }
         public double Radius { get; set; }
+        public Material Material { get; set; }
 
-        public Sphere() : this(center: Vec3.Zero, radius: 1.0) { }
+        public Sphere() : this(center: Vec3.Zero, radius: 1.0, new Lambertian(Vec3.One)) { }
 
-        public Sphere(Vec3 center, double radius)
+        public Sphere(Vec3 center, double radius, Material material)
         {
             Center = center;
             Radius = radius;
+            Material = material;
         }
 
         public override bool Hit(Ray ray, double tMin, double tMax, ref HitRecord rec)
@@ -155,6 +164,7 @@ namespace raytracer2
             rec.p = ray.At(rec.t);
             Vec3 outwardNormal = (rec.p - Center) / Radius;
             rec.SetFaceNormal(ray, outwardNormal);
+            rec.material = Material;
 
             return true;
         }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using System;
 
 namespace raytracer2
 {
@@ -47,7 +48,7 @@ namespace raytracer2
         public double FocalLength => 1.0;
 
         public Vec3 Position { get; private set; } = Vec3.Zero;
-        public double ViewportHeight => 2.0;
+        public double ViewportHeight => 2.0 * heightMod;
         public double ViewportWidth => ViewportHeight * Aspect;
 
         public Vec3 Horizontal => Right * ViewportWidth;
@@ -60,7 +61,23 @@ namespace raytracer2
         // Make viewport vectors
         public Vec3 LowerLeft => Position - Horizontal / 2 - Vertical / 2 + Forward * FocalLength;
 
-        public Camera(Vec3 forward, int width, int height, GraphicsDeviceManager graphicsDeviceManager) : base(width, height, graphicsDeviceManager)
+        private double fov;
+        public double FOV
+        {
+            get => fov;
+            set
+            {
+                if (fov != value)
+                {
+                    Refresh = true;
+                    fov = value;
+                }
+            }
+        }
+
+        private double heightMod => Math.Tan(((Math.PI / 180) * FOV) / 2.0);
+
+        public Camera(Vec3 forward, int width, int height, GraphicsDeviceManager graphicsDeviceManager, double fov = 90) : base(width, height, graphicsDeviceManager)
         {
             Width = width;
             Height = height;
@@ -71,6 +88,8 @@ namespace raytracer2
             // Cross forward with right for actual up
             Up = Vec3.Cross(Forward, Right).normalized;
             Refresh = true;
+
+            FOV = fov;
         }
 
         public override void Resize(int newWidth, int newHeight)

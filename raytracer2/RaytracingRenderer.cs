@@ -7,16 +7,18 @@ namespace raytracer2
 {
     public class RaytracingRenderer : IRenderer
     {
-        private HittableList world;
+        public HittableList World { get; private set; }
         private int maxDepth = 50;
 
         public int SamplesPerPass { get; set; }
 
         public RaytracingRenderer(int samplesPerPass)
         {
-            world = new HittableList();
-            world.objects.Add(new Sphere(new Vec3(0, 0, -1), 0.5));
-            world.objects.Add(new Sphere(new Vec3(0, -100.5, -1), 100));
+            World = new HittableList();
+            World.objects.Add(new Sphere(new Vec3(0, 0, -1), 0.5, new Lambertian(new Vec3(0.7, 0.3, 0.3))));
+            World.objects.Add(new Sphere(new Vec3(1.25, 0, -1), 0.5, new Metal(new Vec3(.8, .6, 0.2), 0.01)));
+            World.objects.Add(new Sphere(new Vec3(-1.25, 0, -1), 0.5, new Metal(new Vec3(.8, .8, .8), 0.3)));
+            World.objects.Add(new Sphere(new Vec3(0, -100.5, -1), 100, new Lambertian(new Vec3(1, 1, 1))));
 
             SamplesPerPass = samplesPerPass;
         }
@@ -27,10 +29,14 @@ namespace raytracer2
             if (depth <= 0)
                 return Vec3.Zero;
 
-            if (world.Hit(r, 0.01, double.PositiveInfinity, ref rec))
+            if (World.Hit(r, 0.01, double.PositiveInfinity, ref rec))
             {
-                Vec3 target = rec.p + rec.normal + Vec3.RandomInUnitSphere();
-                return 0.5 * RayColor(new Ray(rec.p, target - rec.p), depth - 1);
+                Ray scattered;
+                Vec3 atten;
+                if (rec.material.Scatter(r, ref rec, out atten, out scattered))
+                    return atten * RayColor(scattered, depth - 1);
+
+                return Vec3.Zero;
             }
 
             Vec3 unitDir = r.direction.normalized;
