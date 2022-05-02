@@ -38,7 +38,7 @@ namespace raytracer2
         private int threads = 24;
         private int currentRow = 0;
 
-        private int samplesPerPass = 1;
+        private int samplesPerPass = 10;
 
         private bool enableMovement = true;
         private double movementSpeed = 1;
@@ -62,7 +62,7 @@ namespace raytracer2
             imGuiRenderer = new ImGuiRenderer(this);
             imGuiRenderer.RebuildFontAtlas();
 
-            renderTarget = new Camera(new Vec3(0, 0, -1), 256, 256, _graphics);
+            renderTarget = new Camera(new Vec3(0, 0, -1), 512, 512, _graphics);
 
             allRenderers = new List<IRenderer>();
             allRenderers.Add(new RaytracingRenderer(samplesPerPass));
@@ -224,25 +224,28 @@ namespace raytracer2
                 var rt = allRenderers[currentRenderer] as RaytracingRenderer;
                 if (rt != null)
                 {
-                    var objects = rt.World.objects;
-                    int sphereNum = 0;
-                    foreach(var obj in objects)
+                    if (ImGui.CollapsingHeader("Scene Objects"))
                     {
-                        var sphere = obj as Sphere;
-                        if (sphere == null) continue;
-                        sphereNum++;
-
-                        if (ImGui.CollapsingHeader($"Sphere {sphereNum}"))
+                        var objects = rt.World.objects;
+                        int sphereNum = 0;
+                        foreach (var obj in objects)
                         {
-                            System.Numerics.Vector3 pos = new System.Numerics.Vector3((float)sphere.Center.x, (float)sphere.Center.y, (float)sphere.Center.z);
-                            ImGui.InputFloat3($"Sphere {sphereNum} Position", ref pos);
-                            sphere.Center = new Vec3(pos.X, pos.Y, pos.Z);
+                            var sphere = obj as Sphere;
+                            if (sphere == null) continue;
+                            sphereNum++;
 
-                            double rad = sphere.Radius;
-                            ImGui.InputDouble($"Sphere {sphereNum} Radius", ref rad);
-                            sphere.Radius = rad;
+                            if (ImGui.CollapsingHeader($"Sphere {sphereNum}"))
+                            {
+                                System.Numerics.Vector3 pos = new System.Numerics.Vector3((float)sphere.Center.x, (float)sphere.Center.y, (float)sphere.Center.z);
+                                ImGui.InputFloat3($"Sphere {sphereNum} Position", ref pos);
+                                sphere.Center = new Vec3(pos.X, pos.Y, pos.Z);
+
+                                double rad = sphere.Radius;
+                                ImGui.InputDouble($"Sphere {sphereNum} Radius", ref rad);
+                                sphere.Radius = rad;
+                            }
+
                         }
-                        
                     }
                 }
 

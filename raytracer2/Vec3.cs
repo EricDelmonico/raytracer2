@@ -111,7 +111,7 @@ namespace raytracer2
         public bool NearZero()
         {
             double s = 1e-8;
-            return x < s && y < s && z < s;
+            return Math.Abs(x) < s && Math.Abs(y) < s && Math.Abs(z) < s;
         }
 
         public static Vec3 RandomInUnitSphere()
@@ -130,6 +130,19 @@ namespace raytracer2
             y = Math.Sqrt(y);
             z = Math.Sqrt(z);
             return this;
+        }
+
+        public static Vec3 Refract(Vec3 uv, Vec3 n, double etaiOverEtat)
+        {
+            double cosTheta = Math.Min(Dot(-uv, n), 1.0);
+            Vec3 rOutPerp = etaiOverEtat * (uv + cosTheta * n);
+            Vec3 rOutParallel = -Math.Sqrt(Math.Abs(1.0 - rOutPerp.SqrLength())) * n;
+            return rOutPerp + rOutParallel;
+        }
+
+        public static Vec3 Reflect(Vec3 v, Vec3 n)
+        {
+            return v - 2 * Dot(v, n) * n;
         }
     }
 

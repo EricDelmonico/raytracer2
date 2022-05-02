@@ -15,10 +15,14 @@ namespace raytracer2
         public RaytracingRenderer(int samplesPerPass)
         {
             World = new HittableList();
-            World.objects.Add(new Sphere(new Vec3(0, 0, -1), 0.5, new Lambertian(new Vec3(0.7, 0.3, 0.3))));
+            CustomTexture imageTest = new ImageTexture(@"C:\Users\silen\Downloads\rip keytar.png");
+            World.objects.Add(new Sphere(new Vec3(0, 0, -1), 0.5, new Lambertian(imageTest)));
             World.objects.Add(new Sphere(new Vec3(1.25, 0, -1), 0.5, new Metal(new Vec3(.8, .6, 0.2), 0.01)));
-            World.objects.Add(new Sphere(new Vec3(-1.25, 0, -1), 0.5, new Metal(new Vec3(.8, .8, .8), 0.3)));
-            World.objects.Add(new Sphere(new Vec3(0, -100.5, -1), 100, new Lambertian(new Vec3(1, 1, 1))));
+            World.objects.Add(new Sphere(new Vec3(-1.25, 0, -1), 0.5, new Dielectric(1.5)));
+
+            // World "floor"
+            CustomTexture checker = new CheckerTexture(new Vec3(0.2, 0.3, 0.1), new Vec3(0.9, 0.9, 0.9));
+            World.objects.Add(new Sphere(new Vec3(0, -1000.5, -1), 1000, new Lambertian(checker)));
 
             SamplesPerPass = samplesPerPass;
         }

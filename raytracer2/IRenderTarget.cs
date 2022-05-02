@@ -27,6 +27,14 @@ namespace raytracer2
         void SetPixel(int x, int y, Vec3 data);
 
         /// <summary>
+        /// Gets the data of the pixel at the given x,y position
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <returns>Data of the pixel at the given x,y position</returns>
+        PixelData GetPixel(int x, int y);
+
+        /// <summary>
         /// Adds the passed in color to the pixel at the given x, y position
         /// </summary>
         /// <param name="x">X position of the pixel to modify</param>

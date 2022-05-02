@@ -95,6 +95,18 @@ namespace raytracer2
             dirty = true;
         }
 
+        /// <summary>
+        /// Gets the data of the pixel at the given x,y position
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <returns>Data of the pixel at the given x,y position</returns>
+        public PixelData GetPixel(int x, int y)
+        {
+            int trueIndex = Math.Clamp(((Height - 1) * Width - y * Width) + x, 0, colorData.Length - 1);
+            return colorData[trueIndex];
+        }
+
         public void AddPixel(int x, int y, Vec3 color)
         {
             int trueIndex = Math.Clamp(((Height - 1) * Width - y * Width) + x, 0, colorData.Length - 1);

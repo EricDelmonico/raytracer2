@@ -43,11 +43,6 @@ namespace raytracer2
         {
             return RandomDoubleRange(0, 1.0);
         }
-
-        public static Vec3 Reflect(Vec3 v, Vec3 n)
-        {
-            return v - 2 * Vec3.Dot(v, n) * n;
-        }
     }
     
     /// <summary>
@@ -59,13 +54,17 @@ namespace raytracer2
         public Vec3 normal;
         public Material material;
         public double t;
+        public double u;
+        public double v;
         public bool frontFace;
 
-        public HitRecord(Vec3 p, Vec3 normal, double t, Material material)
+        public HitRecord(Vec3 p, Vec3 normal, double t, double u, double v, Material material)
         {
             this.p = p;
             this.normal = normal;
             this.t = t;
+            this.u = u;
+            this.v = v;
             this.material = material;
             frontFace = false;
         }
@@ -164,9 +163,19 @@ namespace raytracer2
             rec.p = ray.At(rec.t);
             Vec3 outwardNormal = (rec.p - Center) / Radius;
             rec.SetFaceNormal(ray, outwardNormal);
+            GetSphereUV(outwardNormal, out rec.u, out rec.v);
             rec.material = Material;
 
             return true;
+        }
+
+        private static void GetSphereUV(Vec3 p, out double u, out double v)
+        {
+            double theta = Math.Acos(-p.y);
+            double phi = Math.Atan2(-p.z, p.x) + Math.PI;
+
+            u = phi / (2 * Math.PI);
+            v = theta / Math.PI;
         }
     }
 }
