@@ -140,5 +140,14 @@ namespace raytracer2
         }
 
         public PixelData[] FreshColorDataArray => new PixelData[Width * Height];
+
+        public void SaveImage(string name)
+        {
+            ApplyTextureChangesIfDirty();
+            using (var stream = System.IO.File.OpenWrite(name))
+            {
+                tex.SaveAsPng(stream, tex.Width, tex.Height);
+            }
+        }
     }
 }

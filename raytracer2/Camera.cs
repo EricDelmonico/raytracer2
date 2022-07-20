@@ -59,7 +59,7 @@ namespace raytracer2
         public Vec3 Forward { get; private set; }
 
         // Make viewport vectors
-        public Vec3 LowerLeft => Position - Horizontal / 2 - Vertical / 2 + Forward * FocalLength;
+        public Vec3 LowerLeft => Position - Horizontal / 2 - Vertical / 2 - Forward * FocalLength;
 
         private double fov;
         public double FOV
@@ -77,7 +77,7 @@ namespace raytracer2
 
         private double heightMod => Math.Tan(((Math.PI / 180) * FOV) / 2.0);
 
-        public Camera(Vec3 forward, int width, int height, GraphicsDeviceManager graphicsDeviceManager, double fov = 90) : base(width, height, graphicsDeviceManager)
+        public Camera(Vec3 forward, Vec3 position, int width, int height, GraphicsDeviceManager graphicsDeviceManager, double fov = 90) : base(width, height, graphicsDeviceManager)
         {
             Width = width;
             Height = height;
@@ -90,6 +90,8 @@ namespace raytracer2
             Refresh = true;
 
             FOV = fov;
+
+            Position = position;
         }
 
         public override void Resize(int newWidth, int newHeight)

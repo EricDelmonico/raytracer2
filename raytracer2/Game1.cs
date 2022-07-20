@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Monogame.Imgui.Renderer;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -35,13 +36,25 @@ namespace raytracer2
 
         private Camera cam => renderTarget as Camera;
 
-        private int threads = 24;
+        private int threads = 1;
         private int currentRow = 0;
 
         private int samplesPerPass = 10;
 
+        private bool savingImage = false;
+
         private bool enableMovement = true;
         private double movementSpeed = 1;
+
+        string imageName = "render";
+
+        private string[] allWorldNames;
+        // Keep track of one camera per scene
+        private Camera[] cameras;
+        private int currentWorldIndex;
+        private int prevWorldIndex;
+        private bool changingWorlds = false;
+
 
         public Game1()
         {
@@ -49,7 +62,7 @@ namespace raytracer2
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
             windowWidth = 1024;
-            windowHeight= 1024;
+            windowHeight = 1024;
             _graphics.PreferredBackBufferWidth = windowWidth;
             _graphics.PreferredBackBufferHeight = windowHeight;
             _graphics.ApplyChanges();
@@ -62,13 +75,26 @@ namespace raytracer2
             imGuiRenderer = new ImGuiRenderer(this);
             imGuiRenderer.RebuildFontAtlas();
 
-            renderTarget = new Camera(new Vec3(0, 0, -1), 512, 512, _graphics);
-
             allRenderers = new List<IRenderer>();
-            allRenderers.Add(new RaytracingRenderer(samplesPerPass));
+            RaytracingRenderer rt = new RaytracingRenderer(samplesPerPass);
+            allRenderers.Add(rt);
             allRenderers.Add(new RenderTargetTester());
 
             allRendererNames = allRenderers.Select((r) => r.GetType().Name).ToArray();
+
+            allWorldNames = Enum.GetNames(typeof(Worlds));
+            currentWorldIndex = 0;
+
+            // Create a camera for each world.. unfortunately must be hard coded. camera at index 0 is the default camera
+            cameras = new[]
+            {
+                new Camera(new Vec3(0, 0, -1), new Vec3(0, 0, -1), 512, 512, _graphics, 60),
+                new Camera(new Vec3(0, 0, -1), new Vec3(278, 278, -800), 512, 512, _graphics, 40.0),
+                new Camera(new Vec3(0, 0, -1), new Vec3(0, 0, -7.5), 512, 512, _graphics, 40.0)
+            };
+            renderTarget = cameras[currentWorldIndex + 1];
+
+            rt.SetWorld(allWorldNames[currentWorldIndex]);
 
             base.Initialize();
         }
@@ -95,7 +121,7 @@ namespace raytracer2
                 {
                     mousePos = mouse.Position;
 
-                    Vector2 diff = (prevMousePos.ToVector2() - mousePos.ToVector2());
+                    Vector2 diff = (mousePos.ToVector2() - prevMousePos.ToVector2());
                     diff.X /= windowWidth;
                     diff.Y /= windowHeight;
                     cam.ChangeForwardVec(diff);
@@ -132,9 +158,9 @@ namespace raytracer2
                 }
             }
 
-            if (renderRealtime)
+            currentTask = currentTask.Where((t) => !t.IsCompleted).ToList();
+            if (renderRealtime && !savingImage && !changingWorlds)
             {
-                currentTask = currentTask.Where((t) => !t.IsCompleted).ToList();
                 if (currentTask.Count < threads)
                 {
                     for (int i = 0; i < threads - currentTask.Count; i++)
@@ -165,11 +191,11 @@ namespace raytracer2
                 // Allow modification of resolution
                 if (ImGui.CollapsingHeader("Resolution"))
                 {
-                    ImGui.InputInt("Width", ref windowWidth);
-                    ImGui.InputInt("Height", ref windowHeight);
+                    ImGui.InputInt("W_Width", ref windowWidth);
+                    ImGui.InputInt("W_Height", ref windowHeight);
 
                     // If we changed window width or height to a reasonable number, make sure to resize
-                    if ((windowWidth > 400 && windowWidth != _graphics.PreferredBackBufferWidth) 
+                    if ((windowWidth > 400 && windowWidth != _graphics.PreferredBackBufferWidth)
                         || (windowHeight > 300 && windowHeight != _graphics.PreferredBackBufferHeight))
                     {
                         _graphics.PreferredBackBufferWidth = windowWidth;
@@ -204,6 +230,31 @@ namespace raytracer2
 
                 ImGui.Checkbox("Render?", ref renderRealtime);
 
+                // Allow saving of the image
+                ImGui.InputText("Image Name", ref imageName, 20);
+                if (ImGui.Button("Save"))
+                {
+                    Task.Run(() =>
+                    {
+                        // Wait here until rendering and any other saving stops
+                        while (savingImage)
+                        {
+                            Task.Delay(100);
+                        }
+                        savingImage = true;
+                        while (currentTask.Count > 0)
+                        {
+                            Task.Delay(100);
+                        }
+
+                        // Save the image
+                        renderTarget.SaveImage(imageName + ".png");
+
+                        // No longer saving image
+                        savingImage = false;
+                    });
+                }
+
                 ImGui.Checkbox("Enable Movement?", ref enableMovement);
 
                 ImGui.DragInt("Threads", ref threads, 1, 1, 64);
@@ -218,33 +269,73 @@ namespace raytracer2
                 {
                     double fov = cam.FOV;
                     ImGui.InputDouble("FOV", ref fov);
-                    cam.FOV = System.Math.Clamp(fov, 10.0, 180.0);
+                    cam.FOV = Math.Clamp(fov, 10.0, 180.0);
                 }
 
                 var rt = allRenderers[currentRenderer] as RaytracingRenderer;
                 if (rt != null)
                 {
-                    if (ImGui.CollapsingHeader("Scene Objects"))
+                    ImGui.Combo("World", ref currentWorldIndex, allWorldNames, allWorldNames.Length);
+                    if (prevWorldIndex != currentWorldIndex)
                     {
-                        var objects = rt.World.objects;
-                        int sphereNum = 0;
-                        foreach (var obj in objects)
+                        // Save index so this thread doesn't use the possibly changing currentWorldIndex
+                        int saveIndex = currentWorldIndex;
+                        Task.Run(() =>
                         {
-                            var sphere = obj as Sphere;
-                            if (sphere == null) continue;
-                            sphereNum++;
-
-                            if (ImGui.CollapsingHeader($"Sphere {sphereNum}"))
+                            // Wait until any world changing has finished
+                            while (changingWorlds)
                             {
-                                System.Numerics.Vector3 pos = new System.Numerics.Vector3((float)sphere.Center.x, (float)sphere.Center.y, (float)sphere.Center.z);
-                                ImGui.InputFloat3($"Sphere {sphereNum} Position", ref pos);
-                                sphere.Center = new Vec3(pos.X, pos.Y, pos.Z);
-
-                                double rad = sphere.Radius;
-                                ImGui.InputDouble($"Sphere {sphereNum} Radius", ref rad);
-                                sphere.Radius = rad;
+                                Task.Delay(100);
+                            }
+                            changingWorlds = true;
+                            // Wait until rendering has finished
+                            while (currentTask.Count > 0)
+                            {
+                                Task.Delay(100);
                             }
 
+                            rt.SetWorld(allWorldNames[saveIndex]);
+                            if (saveIndex + 1 < cameras.Length && saveIndex + 1 > 0)
+                                renderTarget = cameras[saveIndex + 1];
+                            else
+                                renderTarget = cameras[0];
+                            changingWorlds = false;
+                        });
+                    }
+                    prevWorldIndex = currentWorldIndex;
+
+                    if (ImGui.CollapsingHeader("Scene Objects"))
+                    {
+                        var objects = rt.CurrentWorld.objects;
+                        int sphereNum = 0;
+                        int translateNum = 0;
+                        foreach (var obj in objects)
+                        {
+                            switch (obj)
+                            {
+                                case Sphere sphere:
+                                    sphereNum++;
+                                    if (ImGui.CollapsingHeader($"Sphere {sphereNum}"))
+                                    {
+                                        System.Numerics.Vector3 pos = new System.Numerics.Vector3((float)sphere.Center.x, (float)sphere.Center.y, (float)sphere.Center.z);
+                                        ImGui.InputFloat3($"Sphere {sphereNum} Position", ref pos);
+                                        sphere.Center = new Vec3(pos.X, pos.Y, pos.Z);
+
+                                        double rad = sphere.Radius;
+                                        ImGui.InputDouble($"Sphere {sphereNum} Radius", ref rad);
+                                        sphere.Radius = rad;
+                                    }
+                                    break;
+                                case Translate translate:
+                                    translateNum++;
+                                    if (ImGui.CollapsingHeader($"Translate: {translateNum}"))
+                                    {
+                                        System.Numerics.Vector3 pos = new System.Numerics.Vector3((float)translate.Offset.x, (float)translate.Offset.y, (float)translate.Offset.z);
+                                        ImGui.InputFloat3($"Translate: {translateNum} Position", ref pos);
+                                        translate.Offset = new Vec3(pos.X, pos.Y, pos.Z);
+                                    }
+                                    break;
+                            }
                         }
                     }
                 }

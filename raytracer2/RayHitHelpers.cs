@@ -178,4 +178,221 @@ namespace raytracer2
             v = theta / Math.PI;
         }
     }
+
+    public class XYRect : Hittable
+    {
+        private Material material;
+        private double x0, x1, y0, y1, k;
+
+        public XYRect(double x0, double x1, double y0, double y1, double k, Material material)
+        {
+            this.x0 = x0;
+            this.x1 = x1;
+            this.y0 = y0;
+            this.y1 = y1;
+            this.k = k;
+            this.material = material;
+        }
+
+        public override bool Hit(Ray ray, double tMin, double tMax, ref HitRecord rec)
+        {
+            double t = (k - ray.origin.z) / ray.direction.z;
+            if (t < tMin || t > tMax)
+                return false;
+
+            double x = ray.origin.x + t * ray.direction.x;
+            double y = ray.origin.y + t * ray.direction.y;
+            if (x < x0 || x > x1 || y < y0 || y > y1)
+                return false;
+
+            rec.u = (x - x0) / (x1 - x0);
+            rec.v = (y - y0) / (y1 - y0);
+            rec.t = t;
+            Vec3 outwardNormal = new Vec3(0, 0, 1);
+            rec.SetFaceNormal(ray, outwardNormal);
+            rec.material = material;
+            rec.p = ray.At(t);
+            return true;
+        }
+    }
+
+    public class XZRect : Hittable
+    {
+        private Material material;
+        private double x0, x1, z0, z1, k;
+
+        public XZRect(double x0, double x1, double z0, double z1, double k, Material material)
+        {
+            this.x0 = x0;
+            this.x1 = x1;
+            this.z0 = z0;
+            this.z1 = z1;
+            this.k = k;
+            this.material = material;
+        }
+
+        public override bool Hit(Ray ray, double tMin, double tMax, ref HitRecord rec)
+        {
+            double t = (k - ray.origin.y) / ray.direction.y;
+            if (t < tMin || t > tMax)
+                return false;
+
+            double x = ray.origin.x + t * ray.direction.x;
+            double z = ray.origin.z + t * ray.direction.z;
+            if (x < x0 || x > x1 || z < z0 || z > z1)
+                return false;
+
+            rec.u = (x - x0) / (x1 - x0);
+            rec.v = (z - z0) / (z1 - z0);
+            rec.t = t;
+            Vec3 outwardNormal = new Vec3(0, 1, 0);
+            rec.SetFaceNormal(ray, outwardNormal);
+            rec.material = material;
+            rec.p = ray.At(t);
+            return true;
+        }
+    }
+
+    public class YZRect : Hittable
+    {
+        private Material material;
+        private double y0, y1, z0, z1, k;
+
+        public YZRect(double y0, double y1, double z0, double z1, double k, Material material)
+        {
+            this.y0 = y0;
+            this.y1 = y1;
+            this.z0 = z0;
+            this.z1 = z1;
+            this.k = k;
+            this.material = material;
+        }
+
+        public override bool Hit(Ray ray, double tMin, double tMax, ref HitRecord rec)
+        {
+            double t = (k - ray.origin.x) / ray.direction.x;
+            if (t < tMin || t > tMax)
+                return false;
+
+            double y = ray.origin.y + t * ray.direction.y;
+            double z = ray.origin.z + t * ray.direction.z;
+            if (y < y0 || y > y1 || z < z0 || z > z1)
+                return false;
+
+            rec.u = (y - y0) / (y1 - y0);
+            rec.v = (z - z0) / (z1 - z0);
+            rec.t = t;
+            Vec3 outwardNormal = new Vec3(1, 0, 0);
+            rec.SetFaceNormal(ray, outwardNormal);
+            rec.material = material;
+            rec.p = ray.At(t);
+            return true;
+        }
+    }
+
+    public class Box : Hittable
+    {
+        private Vec3 boxMin;
+        private Vec3 boxMax;
+        private HittableList sides;
+
+        public Box(Vec3 p0, Vec3 p1, Material material)
+        {
+            boxMin = p0;
+            boxMax = p1;
+
+            sides = new HittableList();
+            sides.Add(new XYRect(p0.x, p1.x, p0.y, p1.y, p1.z, material));
+            sides.Add(new XYRect(p0.x, p1.x, p0.y, p1.y, p0.z, material));
+
+            sides.Add(new XZRect(p0.x, p1.x, p0.z, p1.z, p1.y, material));
+            sides.Add(new XZRect(p0.x, p1.x, p0.z, p1.z, p0.y, material));
+
+            sides.Add(new YZRect(p0.y, p1.y, p0.z, p1.z, p1.x, material));
+            sides.Add(new YZRect(p0.y, p1.y, p0.z, p1.z, p0.x, material));
+        }
+
+        public override bool Hit(Ray ray, double tMin, double tMax, ref HitRecord rec)
+        {
+            return sides.Hit(ray, tMin, tMax, ref rec);
+        }
+    }
+
+    #region Instances
+
+    public class Translate : Hittable
+    {
+        private Hittable hittable;
+        private Vec3 offset;
+
+        public Vec3 Offset
+        {
+            get => offset;
+            set => offset = value;
+        }
+
+        public Translate(Hittable hittable, Vec3 offset)
+        {
+            this.hittable = hittable;
+            this.offset = offset;
+        }
+
+        public override bool Hit(Ray ray, double tMin, double tMax, ref HitRecord rec)
+        {
+            Ray moved = new Ray(ray.origin - offset, ray.direction);
+            if (!hittable.Hit(moved, tMin, tMax, ref rec))
+                return false;
+
+            rec.p += offset;
+            rec.SetFaceNormal(moved, rec.normal);
+            return true;
+        }
+    }
+
+    public class RotateY : Hittable
+    {
+        private Hittable hittable;
+        private double sin;
+        private double cos;
+
+        public RotateY(Hittable hittable, double angle)
+        {
+            this.hittable = hittable;
+            angle = (Math.PI / 180) * angle;
+            sin = Math.Sin(angle);
+            cos = Math.Cos(angle);
+        }
+
+        public override bool Hit(Ray ray, double tMin, double tMax, ref HitRecord rec)
+        {
+            Vec3 origin = ray.origin;
+            Vec3 direction = ray.direction;
+
+            origin.x = cos * ray.origin.x - sin * ray.origin.z;
+            origin.z = sin * ray.origin.x + cos * ray.origin.z;
+
+            direction.x = cos * ray.direction.x - sin * ray.direction.z;
+            direction.z = sin * ray.direction.x + cos * ray.direction.z;
+
+            Ray rotated = new Ray(origin, direction);
+
+            if (!hittable.Hit(rotated, tMin, tMax, ref rec))
+                return false;
+
+            Vec3 p = rec.p;
+            Vec3 normal = rec.normal;
+
+            p.x = cos * rec.p.x + sin * rec.p.z;
+            p.z = -sin * rec.p.x + cos * rec.p.z;
+
+            normal.x = cos * rec.normal.x + sin * rec.normal.z;
+            normal.z = -sin * rec.normal.x + cos * rec.normal.z;
+
+            rec.p = p;
+            rec.SetFaceNormal(rotated, normal);
+            return true;
+        }
+    }
+
+    #endregion
 }

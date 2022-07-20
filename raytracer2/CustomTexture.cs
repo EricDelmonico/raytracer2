@@ -83,8 +83,8 @@ namespace raytracer2
             u = Math.Clamp(u, 0.0, 1.0);
             v = 1.0 - Math.Clamp(v, 0.0, 1.0); // Flip v
 
-            int x = (int)(u * width);
-            int y = (int)(v * height);
+            int x = (int)(u * (width - 1));
+            int y = (int)(v * (height - 1));
 
             return data[x, y];
         }

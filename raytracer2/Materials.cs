@@ -96,4 +96,35 @@ namespace raytracer2
             return r0 + (1 - r0) * Math.Pow((1 - cos), 5);
         }
     }
+
+    public class DiffuseLight : Material
+    {
+        private CustomTexture emission;
+        private double intensity;
+
+        // Default diffuse light will be white
+        public DiffuseLight() : this(new SolidColor(Vec3.One)) { }
+
+        public DiffuseLight(double intensity) : this(new SolidColor(Vec3.One), intensity) { }
+
+        public DiffuseLight(CustomTexture emission, double intensity = 1.0)
+        {
+            this.emission = emission;
+            this.intensity = intensity;
+        }
+
+        public DiffuseLight(Vec3 color, double intensity = 1.0) : this(new SolidColor(color), intensity) { }
+
+        public override bool Scatter(Ray r, ref HitRecord hit, out Vec3 atten, out Ray scattered)
+        {
+            atten = Vec3.Zero;
+            scattered = new Ray(Vec3.Zero, Vec3.Zero);
+            return false;
+        }
+
+        public override Vec3 ColorEmitted(double u, double v, Vec3 p)
+        {
+            return emission.Value(u, v, p) * intensity;
+        }
+    }
 }

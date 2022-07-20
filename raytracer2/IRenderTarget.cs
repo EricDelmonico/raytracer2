@@ -59,5 +59,11 @@ namespace raytracer2
         /// <param name="newWidth"></param>
         /// <param name="newHeight"></param>
         void Resize(int newWidth, int newHeight);
+
+        /// <summary>
+        /// Saves the render to a png image
+        /// </summary>
+        /// <param name="name">Name of the image file</param>
+        void SaveImage(string name);
     }
 }
